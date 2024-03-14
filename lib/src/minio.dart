@@ -14,9 +14,6 @@ import 'package:minio/src/utils.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:xml/xml.dart' show XmlElement;
 
-import '../models.dart';
-import 'minio_helpers.dart';
-
 class Minio {
   /// Initializes a new client object.
   Minio({
@@ -913,6 +910,7 @@ class Minio {
     String bucket,
     String object,
     Stream<Uint8List> data, {
+    String? tag,
     int? size,
     int? chunkSize,
     Map<String, String>? metadata,
@@ -920,6 +918,7 @@ class Minio {
   }) async {
     MinioInvalidBucketNameError.check(bucket);
     MinioInvalidObjectNameError.check(object);
+    MinioInvalidTagNameError.check(tag!);
 
     if (size != null && size < 0) {
       throw MinioInvalidArgumentError('invalid size value: $size');
@@ -934,14 +933,7 @@ class Minio {
     final partSize = chunkSize ?? _calculatePartSize(size ?? maxObjectSize);
 
     final uploader = MinioUploader(
-      this,
-      _client,
-      bucket,
-      object,
-      partSize,
-      metadata,
-      onProgress,
-    );
+        this, _client, bucket, object, partSize, metadata, onProgress, tag);
     final chunker = MinChunkSize(partSize);
     final etag = await data.transform(chunker).pipe(uploader);
     return etag.toString();

@@ -128,6 +128,7 @@ class MinioClient {
     String? bucket,
     String? object,
     String? region,
+    String? tag,
     String? resource,
     dynamic payload = '',
     Map<String, dynamic>? queries,
@@ -146,10 +147,12 @@ class MinioClient {
 
     final date = DateTime.now().toUtc();
     final sha256sum = enableSHA256 ? sha256Hex(payload) : 'UNSIGNED-PAYLOAD';
+    final tags = tag;
     request.headers.addAll({
       'user-agent': userAgent,
       'x-amz-date': makeDateLong(date),
       'x-amz-content-sha256': sha256sum,
+      ' x-amz-tagging': tags ?? '',
     });
 
     if (minio.sessionToken != null) {
@@ -169,6 +172,7 @@ class MinioClient {
     String? object,
     String? region,
     String? resource,
+    String? tag,
     dynamic payload = '',
     Map<String, dynamic>? queries,
     Map<String, String>? headers,
@@ -180,6 +184,7 @@ class MinioClient {
       object: object,
       region: region,
       payload: payload,
+      tag: tag,
       resource: resource,
       queries: queries,
       headers: headers,

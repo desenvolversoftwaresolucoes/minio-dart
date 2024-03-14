@@ -19,12 +19,14 @@ class MinioUploader implements StreamConsumer<Uint8List> {
     this.partSize,
     this.metadata,
     this.onProgress,
+    this.tag,
   );
 
   final Minio minio;
   final MinioClient client;
   final String bucket;
   final String object;
+  final String tag;
   final int partSize;
   final Map<String, String> metadata;
   final void Function(int)? onProgress;
@@ -56,7 +58,7 @@ class MinioUploader implements StreamConsumer<Uint8List> {
       }
 
       if (_partNumber == 1 && chunk.length < partSize) {
-        _etag = await _uploadChunk(chunk, headers, null);
+        _etag = await _uploadChunk(chunk, headers, null, tag);
         return;
       }
 
@@ -83,7 +85,7 @@ class MinioUploader implements StreamConsumer<Uint8List> {
         'uploadId': _uploadId,
       };
 
-      final etag = await _uploadChunk(chunk, headers, queries);
+      final etag = await _uploadChunk(chunk, headers, queries, tag);
       final part = CompletedPart(etag, partNumber);
       _parts[part] = chunk.length;
     }
@@ -111,12 +113,14 @@ class MinioUploader implements StreamConsumer<Uint8List> {
     Uint8List chunk,
     Map<String, String> headers,
     Map<String, String?>? queries,
+    String? tag,
   ) async {
     final resp = await client.request(
       method: 'PUT',
       headers: headers,
       queries: queries,
       bucket: bucket,
+      tag: tag,
       object: object,
       payload: chunk,
       onProgress: _updateProgress,

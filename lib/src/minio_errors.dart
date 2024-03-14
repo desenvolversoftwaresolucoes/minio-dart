@@ -47,6 +47,15 @@ class MinioInvalidObjectNameError extends MinioError {
   }
 }
 
+class MinioInvalidTagNameError extends MinioError {
+  MinioInvalidTagNameError(String message) : super(message);
+
+  static void check(String Tag) {
+    if (isValidObjectName(Tag)) return;
+    throw MinioInvalidTagNameError('Invalid Tag name: $Tag');
+  }
+}
+
 class MinioAccessKeyRequiredError extends MinioError {
   MinioAccessKeyRequiredError(String message) : super(message);
 }
