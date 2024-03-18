@@ -122,22 +122,27 @@ String makeDateShort(DateTime date) {
       isoDate.substring(8, 10);
 }
 
-// Função para adicionar prefixo 'x-amz-meta-' aos metadados que não são cabeçalhos padrão da Amazon
 Map<String, String> prependXAMZMeta(Map<String, String?> metadata) {
-  final newMetadata = Map<String, String>.from(
-      metadata); // Cria uma cópia dos metadados originais
+  final newMetadata = Map<String, String>.from(metadata);
+
   for (var key in metadata.keys) {
     // Itera sobre as chaves (cabeçalhos) dos metadados
     if (!isAmzHeader(key) &&
         !isSupportedHeader(key) &&
         !isStorageclassHeader(key)) {
       // Verifica se o cabeçalho não é um cabeçalho padrão da Amazon, não é um cabeçalho suportado e não é um cabeçalho de classe de armazenamento
-      newMetadata['x-amz-meta-' + key] = newMetadata[
-          key]!; // Adiciona um novo cabeçalho com o prefixo "x-amz-meta-" e o valor do cabeçalho original
+      if (key != 'x-amz-tagging') {
+        // Se não for 'x-amz-tagging', adiciona o prefixo "x-amz-meta-"
+        newMetadata['x-amz-meta-' + key] = newMetadata[key]!;
+      } else {
+        // Se for 'x-amz-tagging', mantém o cabeçalho como está
+        newMetadata[key] = newMetadata[key]!;
+      }
       newMetadata
           .remove(key); // Remove o cabeçalho original do mapa de metadados
     }
   }
+
   return newMetadata; // Retorna os metadados modificados
 }
 
