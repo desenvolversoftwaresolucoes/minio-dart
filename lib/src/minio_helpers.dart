@@ -150,8 +150,9 @@ bool isAmzHeader(key) {
       key == 'x-amz-acl' || // Verifica se a chave é 'x-amz-acl'
       key.startsWith(
           'x-amz-server-side-encryption-') || // Verifica se a chave começa com 'x-amz-server-side-encryption-'
+      key == 'x-amz-server-side-encryption' ||
       key ==
-          'x-amz-server-side-encryption'; // Verifica se a chave é 'x-amz-server-side-encryption'
+          'x-amz-tagging'; // Verifica se a chave é 'x-amz-server-side-encryption'
 }
 
 // Função para verificar se o cabeçalho é um cabeçalho suportado
@@ -163,7 +164,7 @@ bool isSupportedHeader(key) {
     'content-encoding',
     'content-disposition',
     'content-language',
-    'x-amz-tagging', // Adiciona 'x-amz-tagging' como cabeçalho suportado
+    //'x-amz-tagging', // Adiciona 'x-amz-tagging' como cabeçalho suportado
     'x-amz-website-redirect-location',
   };
   return (supported_headers.contains(key
