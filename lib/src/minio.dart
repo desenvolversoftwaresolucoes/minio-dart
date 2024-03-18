@@ -839,7 +839,7 @@ class Minio {
     postPolicy.formData['x-amz-signature'] = signature;
     final url = _client
         .getBaseRequest('POST', postPolicy.formData['bucket'], null, region,
-            null, null, null, null, null)
+            null, null, null, null)
         .url;
     var portStr = (port == 80 || port == 443) ? '' : ':$port';
     var urlStr = '${url.scheme}://${url.host}$portStr${url.path}';
@@ -900,7 +900,6 @@ class Minio {
       resource,
       reqParams,
       {},
-      null,
       null,
     );
     return presignSignatureV4(this, request, region, requestDate, expires);

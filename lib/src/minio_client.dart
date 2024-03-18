@@ -128,7 +128,6 @@ class MinioClient {
     String? bucket, // Nome do bucket do Amazon S3
     String? object, // Objeto do Amazon S3
     String? region, // Região do Amazon S3
-    String? tag, // Tags do Amazon S3
     String? resource, // Recurso
     dynamic payload = '', // Corpo da requisição
     Map<String, dynamic>? queries, // Parâmetros da consulta
@@ -143,8 +142,8 @@ class MinioClient {
     region ??= 'us-east-1';
 
     // Cria uma requisição base com os parâmetros fornecidos
-    final request = getBaseRequest(method, bucket, object, region, resource,
-        queries, headers, onProgress, tag);
+    final request = getBaseRequest(
+        method, bucket, object, region, resource, queries, headers, onProgress);
     // Define o corpo da requisição como o payload fornecido
     request.body = payload;
 
@@ -184,7 +183,6 @@ class MinioClient {
     String? object,
     String? region,
     String? resource,
-    String? tag,
     dynamic payload = '',
     Map<String, dynamic>? queries,
     Map<String, String>? headers,
@@ -196,7 +194,6 @@ class MinioClient {
       object: object,
       region: region,
       payload: payload,
-      tag: tag,
       resource: resource,
       queries: queries,
       headers: headers,
@@ -235,17 +232,17 @@ class MinioClient {
   }
 
   MinioRequest getBaseRequest(
-      String method, // Método HTTP da requisição (GET, POST, etc.)
-      String? bucket, // Nome do bucket do Amazon S3
-      String? object, // Objeto do Amazon S3
-      String region, // Região do Amazon S3
-      String? resource, // Recurso
-      Map<String, dynamic>? queries, // Parâmetros da consulta
-      Map<String, String>? headers, // Cabeçalhos da requisição
-      void Function(int)? onProgress, // Função de callback de progresso
-      String? tag) {
+    String method, // Método HTTP da requisição (GET, POST, etc.)
+    String? bucket, // Nome do bucket do Amazon S3
+    String? object, // Objeto do Amazon S3
+    String region, // Região do Amazon S3
+    String? resource, // Recurso
+    Map<String, dynamic>? queries, // Parâmetros da consulta
+    Map<String, String>? headers, // Cabeçalhos da requisição
+    void Function(int)? onProgress, // Função de callback de progresso
+  ) {
     // Obtém a URL da requisição com base nos parâmetros fornecidos
-    final url = getRequestUrl(bucket, object, resource, queries, tag);
+    final url = getRequestUrl(bucket, object, resource, queries);
     // Cria uma nova instância de MinioRequest com o método e a URL fornecidos
     final request = MinioRequest(method, url, onProgress: onProgress);
     // Define o cabeçalho 'host' como a autoridade da URL
@@ -265,7 +262,6 @@ class MinioClient {
     String? object, // Objeto do Amazon S3
     String? resource, // Recurso
     Map<String, dynamic>? queries, // Parâmetros da consulta
-    String? tag, // Tags do Amazon S3
   ) {
     var host = minio.endPoint
         .toLowerCase(); // Obtém o endpoint do MinIO e converte para minúsculas
@@ -302,12 +298,6 @@ class MinioClient {
       }
       query.write(encodeQueries(
           queries)); // Codifica os parâmetros da consulta e os adiciona
-    }
-    if (tag != null) {
-      if (query.isNotEmpty) {
-        query.write('&'); // Adiciona um '&' se já houver uma parte da consulta
-      }
-      query.write('tag=$tag'); // Adiciona a tag à consulta
     }
 
     // Retorna a URI construída com o esquema, host, porta, caminho e consulta
