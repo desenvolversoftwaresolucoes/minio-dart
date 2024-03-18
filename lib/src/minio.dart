@@ -910,7 +910,6 @@ class Minio {
     String bucket,
     String object,
     Stream<Uint8List> data, {
-    String? tag,
     int? size,
     int? chunkSize,
     Map<String, String>? metadata,
@@ -918,7 +917,6 @@ class Minio {
   }) async {
     MinioInvalidBucketNameError.check(bucket);
     MinioInvalidObjectNameError.check(object);
-    MinioInvalidTagNameError.check(tag!);
 
     if (size != null && size < 0) {
       throw MinioInvalidArgumentError('invalid size value: $size');
@@ -933,7 +931,7 @@ class Minio {
     final partSize = chunkSize ?? _calculatePartSize(size ?? maxObjectSize);
 
     final uploader = MinioUploader(
-        this, _client, bucket, object, partSize, metadata, onProgress, tag);
+        this, _client, bucket, object, partSize, metadata, onProgress);
     final chunker = MinChunkSize(partSize);
     final etag = await data.transform(chunker).pipe(uploader);
     return etag.toString();

@@ -19,14 +19,13 @@ class MinioUploader implements StreamConsumer<Uint8List> {
     this.partSize,
     this.metadata,
     this.onProgress,
-    this.tag,
   );
 
   final Minio minio;
   final MinioClient client;
   final String bucket;
   final String object;
-  final String tag;
+
   final int partSize;
   final Map<String, String> metadata;
   final void Function(int)? onProgress;
