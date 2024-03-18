@@ -124,42 +124,56 @@ class MinioClient {
   late final int port;
 
   Future<StreamedResponse> _request({
-    required String method,
-    String? bucket,
-    String? object,
-    String? region,
-    String? resource,
-    dynamic payload = '',
-    Map<String, dynamic>? queries,
-    Map<String, String>? headers,
-    void Function(int)? onProgress,
+    required String method, // Método HTTP da requisição (GET, POST, etc.)
+    String? bucket, // Nome do bucket do Amazon S3
+    String? object, // Objeto do Amazon S3
+    String? region, // Região do Amazon S3
+    String? resource, // Recurso
+    dynamic payload = '', // Corpo da requisição
+    Map<String, dynamic>? queries, // Parâmetros da consulta
+    Map<String, String>? headers, // Cabeçalhos da requisição
+    void Function(int)? onProgress, // Função de callback de progresso
   }) async {
+    // Verifica se o bucket foi fornecido e, se sim, tenta obter a região do bucket
     if (bucket != null) {
       region ??= await minio.getBucketRegion(bucket);
     }
-
+    // Define a região padrão como 'us-east-1' se não foi fornecida
     region ??= 'us-east-1';
 
+    // Cria uma requisição base com os parâmetros fornecidos
     final request = getBaseRequest(
         method, bucket, object, region, resource, queries, headers, onProgress);
+    // Define o corpo da requisição como o payload fornecido
     request.body = payload;
 
+    // Gera a data atual em UTC
     final date = DateTime.now().toUtc();
+    // Calcula o hash SHA256 do payload, se ativado, caso contrário, define como 'UNSIGNED-PAYLOAD'
     final sha256sum = enableSHA256 ? sha256Hex(payload) : 'UNSIGNED-PAYLOAD';
+    // Obtém as tags do Amazon S3, se fornecidas
+
+    // Adiciona os cabeçalhos necessários para autenticação da requisição
     request.headers.addAll({
       'user-agent': userAgent,
       'x-amz-date': makeDateLong(date),
       'x-amz-content-sha256': sha256sum,
     });
 
+    // Adiciona o token de sessão aos cabeçalhos, se disponível
     if (minio.sessionToken != null) {
       request.headers['x-amz-security-token'] = minio.sessionToken!;
     }
+    // Gera a autorização da requisição usando o método de autenticação AWS Signature Version 4
     final authorization = signV4(minio, request, date, region);
+    // Adiciona o cabeçalho 'authorization' à requisição
     request.headers['authorization'] = authorization;
 
+    // Registra a requisição
     logRequest(request);
+    // Envia a requisição assíncrona e aguarda a resposta
     final response = await request.send();
+    // Retorna a resposta da requisição
     return response;
   }
 
@@ -218,62 +232,82 @@ class MinioClient {
   }
 
   MinioRequest getBaseRequest(
-    String method,
-    String? bucket,
-    String? object,
-    String region,
-    String? resource,
-    Map<String, dynamic>? queries,
-    Map<String, String>? headers,
-    void Function(int)? onProgress,
+    String method, // Método HTTP da requisição (GET, POST, etc.)
+    String? bucket, // Nome do bucket do Amazon S3
+    String? object, // Objeto do Amazon S3
+    String region, // Região do Amazon S3
+    String? resource, // Recurso
+    Map<String, dynamic>? queries, // Parâmetros da consulta
+    Map<String, String>? headers, // Cabeçalhos da requisição
+    void Function(int)? onProgress, // Função de callback de progresso
   ) {
+    // Obtém a URL da requisição com base nos parâmetros fornecidos
     final url = getRequestUrl(bucket, object, resource, queries);
+    // Cria uma nova instância de MinioRequest com o método e a URL fornecidos
     final request = MinioRequest(method, url, onProgress: onProgress);
+    // Define o cabeçalho 'host' como a autoridade da URL
     request.headers['host'] = url.authority;
 
+    // Se cabeçalhos adicionais foram fornecidos, adiciona-os à requisição
     if (headers != null) {
       request.headers.addAll(headers);
     }
 
+    // Retorna a instância de MinioRequest
     return request;
   }
 
   Uri getRequestUrl(
-    String? bucket,
-    String? object,
-    String? resource,
-    Map<String, dynamic>? queries,
+    String? bucket, // Nome do bucket do Amazon S3
+    String? object, // Objeto do Amazon S3
+    String? resource, // Recurso
+    Map<String, dynamic>? queries, // Parâmetros da consulta
   ) {
-    var host = minio.endPoint.toLowerCase();
-    var path = '/';
+    var host = minio.endPoint
+        .toLowerCase(); // Obtém o endpoint do MinIO e converte para minúsculas
+    var path = '/'; // Inicializa o caminho como '/'
 
+    // Se o endpoint for da Amazon, substitui pelo endpoint do S3 correspondente à região do MinIO
     if (isAmazonEndpoint(host)) {
       host = getS3Endpoint(minio.region!);
     }
 
+    // Verifica se o estilo de host é virtual e constrói a URL de acordo com isso
     if (isVirtualHostStyle(host, minio.useSSL, bucket)) {
-      if (bucket != null) host = '$bucket.$host';
-      if (object != null) path = '/$object';
+      if (bucket != null) {
+        host = '$bucket.$host'; // Adiciona o nome do bucket ao host
+      }
+      if (object != null) path = '/$object'; // Adiciona o objeto ao caminho
     } else {
-      if (bucket != null) path = '/$bucket';
-      if (object != null) path = '/$bucket/$object';
+      if (bucket != null) {
+        path = '/$bucket'; // Adiciona o nome do bucket ao caminho
+      }
+      if (object != null) {
+        path = '/$bucket/$object'; // Adiciona o objeto ao caminho
+      }
     }
 
+    // Constrói a string de consulta
     final query = StringBuffer();
     if (resource != null) {
       query.write(resource);
     }
     if (queries != null) {
-      if (query.isNotEmpty) query.write('&');
-      query.write(encodeQueries(queries));
+      if (query.isNotEmpty) {
+        query.write('&'); // Adiciona um '&' se já houver uma parte da consulta
+      }
+      query.write(encodeQueries(
+          queries)); // Codifica os parâmetros da consulta e os adiciona
     }
 
+    // Retorna a URI construída com o esquema, host, porta, caminho e consulta
     return Uri(
-      scheme: minio.useSSL ? 'https' : 'http',
+      scheme:
+          minio.useSSL ? 'https' : 'http', // Usa HTTPS se o SSL estiver ativado
       host: host,
-      port: minio.port,
-      pathSegments: path.split('/'),
-      query: query.toString(),
+      port: minio.port, // Usa a porta configurada no MinIO
+      pathSegments: path.split('/'), // Divide o caminho em segmentos
+      query: query.toString(), // Adiciona a string de consulta à URI
     );
   }
 

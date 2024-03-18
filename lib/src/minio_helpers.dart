@@ -124,39 +124,62 @@ String makeDateShort(DateTime date) {
 
 Map<String, String> prependXAMZMeta(Map<String, String?> metadata) {
   final newMetadata = Map<String, String>.from(metadata);
+
   for (var key in metadata.keys) {
+    // Itera sobre as chaves (cabeçalhos) dos metadados
     if (!isAmzHeader(key) &&
         !isSupportedHeader(key) &&
         !isStorageclassHeader(key)) {
-      newMetadata['x-amz-meta-' + key] = newMetadata[key]!;
-      newMetadata.remove(key);
+      // Verifica se o cabeçalho não é um cabeçalho padrão da Amazon, não é um cabeçalho suportado e não é um cabeçalho de classe de armazenamento
+      if (key != 'x-amz-tagging') {
+        // Se não for 'x-amz-tagging', adiciona o prefixo "x-amz-meta-"
+        newMetadata['x-amz-meta-' + key] = newMetadata[key]!;
+      } else {
+        // Se for 'x-amz-tagging', mantém o cabeçalho como está
+        newMetadata[key] = newMetadata[key]!;
+      }
+      newMetadata
+          .remove(key); // Remove o cabeçalho original do mapa de metadados
     }
   }
-  return newMetadata;
+
+  return newMetadata; // Retorna os metadados modificados
 }
 
+// Função para verificar se o cabeçalho é um cabeçalho padrão da Amazon
 bool isAmzHeader(key) {
-  key = key.toLowerCase();
-  return key.startsWith('x-amz-meta-') ||
-      key == 'x-amz-acl' ||
-      key.startsWith('x-amz-server-side-encryption-') ||
-      key == 'x-amz-server-side-encryption';
+  key = key
+      .toLowerCase(); // Converte a chave para minúsculas para tornar a comparação não sensível a maiúsculas e minúsculas
+  return key.startsWith(
+          'x-amz-meta-') || // Verifica se a chave começa com 'x-amz-meta-'
+      key == 'x-amz-acl' || // Verifica se a chave é 'x-amz-acl'
+      key.startsWith(
+          'x-amz-server-side-encryption-') || // Verifica se a chave começa com 'x-amz-server-side-encryption-'
+      key == 'x-amz-server-side-encryption' ||
+      key ==
+          'x-amz-tagging'; // Verifica se a chave é 'x-amz-server-side-encryption'
 }
 
+// Função para verificar se o cabeçalho é um cabeçalho suportado
 bool isSupportedHeader(key) {
   var supported_headers = {
+    // Define os cabeçalhos suportados em um conjunto
     'content-type',
     'cache-control',
     'content-encoding',
     'content-disposition',
     'content-language',
+    //'x-amz-tagging', // Adiciona 'x-amz-tagging' como cabeçalho suportado
     'x-amz-website-redirect-location',
   };
-  return (supported_headers.contains(key.toLowerCase()));
+  return (supported_headers.contains(key
+      .toLowerCase())); // Verifica se a chave está presente nos cabeçalhos suportados, ignorando as diferenças de maiúsculas e minúsculas
 }
 
+// Função para verificar se o cabeçalho é um cabeçalho de classe de armazenamento
 bool isStorageclassHeader(key) {
-  return key.toLowerCase() == 'x-amz-storage-class';
+  return key.toLowerCase() ==
+      'x-amz-storage-class'; // Verifica se a chave é 'x-amz-storage-class'
 }
 
 Map<String, String> extractMetadata(Map<String, String> metaData) {
